@@ -41,6 +41,7 @@
 #include "libusbi.h"
 #include "linux_usbfs.h"
 
+
 /* sysfs vs usbfs:
  * opening a usbfs node causes the device to be resumed, so we attempt to
  * avoid this during enumeration.
@@ -298,7 +299,7 @@ static int op_init(struct libusb_context *ctx)
 {
 	struct stat statbuf;
 	int r;
-
+	usbi_err(NULL, "FIND USBFS PATH");
 	usbfs_path = find_usbfs_path();
 	if (!usbfs_path) {
 		usbi_err(ctx, "could not find usbfs");
@@ -338,6 +339,8 @@ static int op_init(struct libusb_context *ctx)
 		struct dirent *entry;
 
 		usbi_dbg("found usb devices in sysfs");
+
+		usbi_err(NULL, "linux_usbfs(op_init) found usb devices in sysfs");
 
 		if (!devices) {
 			usbi_err(ctx, "opendir devices failed errno=%d", errno);
@@ -401,6 +404,8 @@ static int usbfs_get_device_descriptor(struct libusb_device *dev,
 	unsigned char *buffer)
 {
 	struct linux_device_priv *priv = _device_priv(dev);
+
+	usbi_err(NULL, "linux_usbfs(usbfs_get_device_descriptor) ");
 
 	/* return cached copy */
 	memcpy(buffer, priv->dev_descriptor, DEVICE_DESC_LENGTH);
@@ -1080,6 +1085,8 @@ static int usbfs_get_device_list(struct libusb_context *ctx,
 		if (entry->d_name[0] == '.')
 			continue;
 
+		usbi_err(ctx, "usbfs_get_device_list: entry->d_name %s", entry->d_name);
+
 		if (usbdev_names) {
 			int devaddr;
 			if (!_is_usbdev_entry(entry, &busnum, &devaddr))
@@ -1195,11 +1202,14 @@ static int op_get_device_list(struct libusb_context *ctx,
 static int find_fd_by_name(char *file_name)
 {
 	struct dirent *fd_dirent;
+	usbi_err(NULL, "opendir ");
+
 	DIR *proc_fd = opendir("/proc/self/fd");
 	int ret = -1;
-
+	usbi_err(NULL, "opendir done!");
 	while (fd_dirent = readdir(proc_fd))
 	{
+		usbi_err(NULL, "find_fd_by_name %s", fd_dirent->d_name);
 		char link_file_name[1024];
 		char fd_file_name[1024];
 
@@ -1225,41 +1235,104 @@ static int find_fd_by_name(char *file_name)
 }
 // *** PrimeSense patch for Android ***
 
-static int op_open(struct libusb_device_handle *handle)
+	// pass fd from java
+static int op_open(struct libusb_device_handle *handle,	int fd)
 {
+	usbi_err(NULL, "op_open with fd %d", fd);
 	struct linux_device_handle_priv *hpriv = _device_handle_priv(handle);
-	char filename[PATH_MAX];
-
-	_get_usbfs_path(handle->dev, filename);
-	usbi_dbg("opening %s", filename);
-	// *** PrimeSense patch for Android ***	
-	hpriv->fd = find_fd_by_name(filename);
-	
-	// Fallback for regular non-java applications
-	if (hpriv->fd == -1)
-	{
-		hpriv->fd = open(filename, O_RDWR);
-	}
-// *** PrimeSense patch for Android ***
-	if (hpriv->fd < 0) {
-		if (errno == EACCES) {
-			usbi_err(HANDLE_CTX(handle), "libusb couldn't open USB device %s: "
-				"Permission denied.", filename);
-			usbi_err(HANDLE_CTX(handle),
-				"libusb requires write access to USB device nodes.");
-			return LIBUSB_ERROR_ACCESS;
-		} else if (errno == ENOENT) {
-			usbi_err(HANDLE_CTX(handle), "libusb couldn't open USB device %s: "
-				"No such file or directory.", filename);
-			return LIBUSB_ERROR_NO_DEVICE;
-		} else {
-			usbi_err(HANDLE_CTX(handle),
-				"open failed, code %d errno %d", hpriv->fd, errno);
-			return LIBUSB_ERROR_IO;
-		}
-	}
-
+	hpriv->fd = fd;
+	usbi_err(NULL, "calling usbi_add_pollfd ");
 	return usbi_add_pollfd(HANDLE_CTX(handle), hpriv->fd, POLLOUT);
+
+
+
+//
+//
+//
+//
+//	struct linux_device_handle_priv *hpriv = _device_handle_priv(handle);
+//	char filename[PATH_MAX];
+//	usbi_err(NULL, "op_open get usbpath");
+//
+//	_get_usbfs_path(handle->dev, filename);
+//	usbi_err(NULL, "opening %s", filename);
+//	// *** PrimeSense patch for Android ***
+//	//hpriv->fd = find_fd_by_name(filename);
+//
+//	// Fallback for regular non-java applications
+//	//if (hpriv->fd == -1)
+//	{
+////		char syscommand[1024];
+////		snprintf(syscommand, 1024, "su root \"-c chmod -R 777 %s\"", filename);
+////		int r = system(syscommand);
+////		if(r!=0) {
+////			usbi_err(NULL,"Could not grant permissions to USB\n");
+////		}
+//
+//
+//
+//
+//		FILE *fp;
+//		  char path[1035];
+//
+//		  /* Open the command for reading. */
+//		  fp = popen("ls -la /dev/bus/usb/002", "r");
+//		  if (fp == NULL) {
+//			  usbi_err(NULL,"Failed to run command\n" );
+//		    exit(1);
+//		  }
+//
+//		  /* Read the output a line at a time - output it. */
+//		  while (fgets(path, sizeof(path)-1, fp) != NULL) {
+//			  usbi_err(NULL,"%s", path);
+//		  }
+//
+//		  /* close */
+//		  pclose(fp);
+//
+//
+//
+//
+//
+//
+//
+//		hpriv->fd = open(filename, O_RDONLY);
+//
+//		int errnum;
+//
+//		   if (hpriv->fd == -1) {
+//
+//		      errnum = errno;
+//		      //fprintf(stderr, "Value of errno: %d\n", errno);
+//		      //perror("Error printed by perror");
+//		      usbi_err(NULL, "Error opening file: %s\n", strerror( errnum ));
+//		   }
+//
+//	}
+//
+//	usbi_err(NULL, "opening fd %d", hpriv->fd);
+//
+//
+//// *** PrimeSense patch for Android ***
+//	if (hpriv->fd < 0) {
+//		if (errno == EACCES) {
+//			usbi_err(HANDLE_CTX(handle), "libusb couldn't open USB device %s: "
+//				"Permission denied.", filename);
+//			usbi_err(HANDLE_CTX(handle),
+//				"libusb requires write access to USB device nodes.");
+//			return LIBUSB_ERROR_ACCESS;
+//		} else if (errno == ENOENT) {
+//			usbi_err(HANDLE_CTX(handle), "libusb couldn't open USB device %s: "
+//				"No such file or directory.", filename);
+//			return LIBUSB_ERROR_NO_DEVICE;
+//		} else {
+//			usbi_err(HANDLE_CTX(handle),
+//				"open failed, code %d errno %d", hpriv->fd, errno);
+//			return LIBUSB_ERROR_IO;
+//		}
+//	}
+//
+//	return usbi_add_pollfd(HANDLE_CTX(handle), hpriv->fd, POLLOUT);
 }
 
 static void op_close(struct libusb_device_handle *dev_handle)

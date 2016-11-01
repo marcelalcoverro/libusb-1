@@ -983,7 +983,7 @@ int LIBUSB_CALL libusb_get_max_packet_size(libusb_device *dev,
 int LIBUSB_CALL libusb_get_max_iso_packet_size(libusb_device *dev,
 	unsigned char endpoint);
 
-int LIBUSB_CALL libusb_open(libusb_device *dev, libusb_device_handle **handle);
+int LIBUSB_CALL libusb_open(libusb_device *dev, libusb_device_handle **handle, int fd);
 void LIBUSB_CALL libusb_close(libusb_device_handle *dev_handle);
 libusb_device * LIBUSB_CALL libusb_get_device(libusb_device_handle *dev_handle);
 
@@ -995,7 +995,7 @@ int LIBUSB_CALL libusb_release_interface(libusb_device_handle *dev,
 	int interface_number);
 
 libusb_device_handle * LIBUSB_CALL libusb_open_device_with_vid_pid(
-	libusb_context *ctx, uint16_t vendor_id, uint16_t product_id);
+	libusb_context *ctx, uint16_t vendor_id, uint16_t product_id, int fd);
 
 int LIBUSB_CALL libusb_set_interface_alt_setting(libusb_device_handle *dev,
 	int interface_number, int alternate_setting);

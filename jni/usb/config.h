@@ -25,6 +25,13 @@
 #undef USBI_TIMERFD_AVAILABLE
 // *** PrimeSense patch for Android ***
 
+#ifndef __ANDROID__
+#define __ANDROID__
+#endif
+#define USE_UDEV
+
+
+
 /* Message logging */
 #define ENABLE_LOGGING
 

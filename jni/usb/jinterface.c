@@ -136,7 +136,9 @@ Java_nok_pack_USBcheckDevice( JNIEnv* env, jobject this, jint vid, jint pid )
 {
 	 int i=0,ret = 0;
 
-	 dev_handle = libusb_open_device_with_vid_pid(ctx, vid, pid);
+	 /// fd hack to accomplish API
+	 int fd = 0;
+	 dev_handle = libusb_open_device_with_vid_pid(ctx, vid, pid, fd);
 
 	 if(NULL == dev_handle) return -1;
 

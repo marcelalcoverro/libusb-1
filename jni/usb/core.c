@@ -630,6 +630,8 @@ ssize_t API_EXPORTED libusb_get_device_list(libusb_context *ctx,
 	if (!discdevs)
 		return LIBUSB_ERROR_NO_MEM;
 
+	usbi_err(NULL, "core.c(libusb_get_device_list) GET DEVICE LIST");
+
 	r = usbi_backend->get_device_list(ctx, &discdevs);
 	if (r < 0) {
 		len = r;
@@ -940,7 +942,7 @@ void usbi_fd_notification(struct libusb_context *ctx)
  * \returns another LIBUSB_ERROR code on other failure
  */
 int API_EXPORTED libusb_open(libusb_device *dev,
-	libusb_device_handle **handle)
+	libusb_device_handle **handle, int fd)
 {
 	struct libusb_context *ctx = DEVICE_CTX(dev);
 	struct libusb_device_handle *_handle;
@@ -962,7 +964,7 @@ int API_EXPORTED libusb_open(libusb_device *dev,
 	_handle->claimed_interfaces = 0;
 	memset(&_handle->os_priv, 0, priv_size);
 
-	r = usbi_backend->open(_handle);
+	r = usbi_backend->open(_handle, fd);
 	if (r < 0) {
 		usbi_dbg("open %d.%d returns %d", dev->bus_number, dev->device_address, r);
 		libusb_unref_device(dev);
@@ -1005,7 +1007,7 @@ int API_EXPORTED libusb_open(libusb_device *dev,
  * device could not be found. */
 DEFAULT_VISIBILITY
 libusb_device_handle * LIBUSB_CALL libusb_open_device_with_vid_pid(
-	libusb_context *ctx, uint16_t vendor_id, uint16_t product_id)
+	libusb_context *ctx, uint16_t vendor_id, uint16_t product_id, int fd)
 {
 	struct libusb_device **devs;
 	struct libusb_device *found = NULL;
@@ -1029,7 +1031,7 @@ libusb_device_handle * LIBUSB_CALL libusb_open_device_with_vid_pid(
 	}
 
 	if (found) {
-		r = libusb_open(found, &handle);
+		r = libusb_open(found, &handle, fd);
 		if (r < 0)
 			handle = NULL;
 	}

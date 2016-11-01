@@ -1,7 +1,5 @@
-LOCAL_PATH := $(call my-dir)  
-APP_PLATFORM := android-16
-
-include $(CLEAR_VARS)  
+LOCAL_PATH:= $(call my-dir)
+include $(CLEAR_VARS)
 
 
 LOCAL_SRC_FILES:= \
@@ -12,10 +10,15 @@ LOCAL_SRC_FILES:= \
 	 os/linux_usbfs.c \
 	 os/threads_posix.c \
 	 jinterface.c
+	 
+	 
+	 # C/CPP Flags
+LOCAL_CFLAGS += $(OPENNI2_CFLAGS) -DOPENNI2_EXPORT -fvisibility=default
+	 
 			
 LOCAL_LDLIBS := -llog
 
-LOCAL_MODULE := usbnok 
+LOCAL_MODULE := libusb 
 
 
 include $(BUILD_SHARED_LIBRARY)  
